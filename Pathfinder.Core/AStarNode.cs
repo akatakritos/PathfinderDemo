@@ -28,5 +28,16 @@ namespace Pathfinder.Core
         /// Using Parent, we can walk backwards from the target to enumerate the path
         /// </summary>
         public AStarNode Parent { get; set; }
+
+        public IEnumerable<Point> TraceToStart()
+        {
+            var node = this;
+            while (node.Parent != null)
+            {
+                yield return node.Point;
+                node = node.Parent;
+            }
+
+        }
     }
 }

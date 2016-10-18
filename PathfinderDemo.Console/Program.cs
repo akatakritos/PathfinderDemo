@@ -75,7 +75,7 @@ namespace PathfinderDemo.ConsoleUI
 
         private static void DrawMap(MapContext map, Path path)
         {
-            var steps = path?.Steps ?? new Point[0];
+            var steps = path?.Steps ?? Array.Empty<Point>();
 
             WriteHorizontalBorder(map, bottom: false);
             for (var y = 0; y < map.Height; y++)

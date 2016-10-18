@@ -33,7 +33,7 @@ namespace Pathfinder.Core
 
             while (openList.Any())
             {
-                var shortestNode = openList.OrderBy(n => n.F).First();
+                var shortestNode = openList.MinBy(n => n.F);
 
                 // Move the node to the considered list
                 closedList.Add(shortestNode);
@@ -41,23 +41,24 @@ namespace Pathfinder.Core
 
                 // if the considered list contains the target,
                 // we've found the shortest path
-                if (closedList.Any(n => n.Point == map.TargetPoint))
+                var targetPointNode = closedList.FirstOrDefault(n => n.Point == map.TargetPoint);
+                if (targetPointNode != null)
                 {
                     return new Path(
-                        WalkBackwards(closedList.First(n => n.Point == map.TargetPoint))
+                        targetPointNode.TraceToStart()
                             .Reverse()
                             .ToList());
                 }
 
                 var adjacent = Adjacent(map, shortestNode.Point);
-                foreach (var p in adjacent)
+                foreach (var testPoint in adjacent)
                 {
                     // Skip this point if its already been considered
-                    if (closedList.Any(n => n.Point == p))
+                    if (closedList.Any(n => n.Point == testPoint))
                         continue;
 
-                    // ReSharper disable once SimplifyLinqExpression
-                    if (!openList.Any(n => n.Point == p))
+                    var existingNodeForPoint = openList.FirstOrDefault(n => n.Point == testPoint);
+                    if (existingNodeForPoint == null)
                     {
                         // If this point is not in the list to consider, we'll
                         // add it so it can be considered later
@@ -65,8 +66,8 @@ namespace Pathfinder.Core
                         {
                             Parent = shortestNode,
                             G = shortestNode.G + 1,
-                            H = CalculateHeuristic(p, map.TargetPoint),
-                            Point = p
+                            H = CalculateHeuristic(testPoint, map.TargetPoint),
+                            Point = testPoint
                         });
                     }
                     else
@@ -78,16 +79,15 @@ namespace Pathfinder.Core
                         var potentiallyBetterNode = new AStarNode()
                         {
                             G = shortestNode.G + 1,
-                            H = CalculateHeuristic(p, map.TargetPoint),
+                            H = CalculateHeuristic(testPoint, map.TargetPoint),
                             Parent = shortestNode,
-                            Point = p
+                            Point = testPoint
                         };
 
-                        var current = openList.First(n => n.Point == p);
 
-                        if (potentiallyBetterNode.F < current.F)
+                        if (potentiallyBetterNode.F < existingNodeForPoint.F)
                         {
-                            openList.Remove(current);
+                            openList.Remove(existingNodeForPoint);
                             openList.Add(potentiallyBetterNode);
                         }
                     }
@@ -96,15 +96,6 @@ namespace Pathfinder.Core
 
             // Couldn't find a path
             return null;
-        }
-
-        private static IEnumerable<Point> WalkBackwards(AStarNode node)
-        {
-            while (node.Parent != null)
-            {
-                yield return node.Point;
-                node = node.Parent;
-            }
         }
 
         private static int CalculateHeuristic(Point p1, Point target)
